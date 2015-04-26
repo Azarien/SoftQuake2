@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="dsound.lib winmm.lib wsock32.lib"
+				AdditionalDependencies="dxguid.lib dsound.lib winmm.lib wsock32.lib"
 				OutputFile="$(OutDir)\quake2.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -156,7 +156,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="dsound.lib winmm.lib wsock32.lib"
+				AdditionalDependencies="dxguid.lib dsound.lib winmm.lib wsock32.lib"
 				OutputFile="$(OutDir)\quake2.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
