@@ -207,7 +207,7 @@ void SWimp_EndFrame (void)
 														NULL );
 		if (rval == DDERR_SURFACELOST)
 		{
-			sww_state.lpddsBackBuffer->lpVtbl->Restore(sww_state.lpddsBackBuffer);
+			sww_state.lpddsFrontBuffer->lpVtbl->Restore(sww_state.lpddsFrontBuffer);
 			rval = sww_state.lpddsBackBuffer->lpVtbl->Lock( sww_state.lpddsBackBuffer,
 															NULL,
 															&ddsd,
