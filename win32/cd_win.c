@@ -180,7 +180,7 @@ static qboolean PlayCallback(struct ThreadArgList_t *playData, char *ptr, DWORD 
 
 #define BUFFER_PARTS 8
 
-static void PlayingThreadProc(void *arglist)
+static unsigned int __stdcall PlayingThreadProc(void *arglist)
 {
 	struct ThreadArgList_t *tal = arglist;
 
@@ -194,8 +194,6 @@ static void PlayingThreadProc(void *arglist)
 	HRESULT hr;
 	qboolean more_data;
 	qboolean trackPlayedToEnd = false;
-
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
 	CDAudio_WaitForFinish();
 	ResetEvent(cdPlayingFinishedEvent);
@@ -274,10 +272,12 @@ static void PlayingThreadProc(void *arglist)
 		else
 			CDAudio_Play2(playTrack, true);
 	}
+	return 0;
 }
 
 void CDAudio_Play2(int track, qboolean looping)
 {
+	HANDLE playingThread;
 	char filename[MAX_PATH];
 	struct ThreadArgList_t *tal;
 
@@ -324,7 +324,9 @@ void CDAudio_Play2(int track, qboolean looping)
 	// force volume update
 	cdvolume = -1;
 
-	_beginthread(PlayingThreadProc, 0, tal);
+	playingThread = (HANDLE)_beginthreadex(NULL, 0, PlayingThreadProc, tal, CREATE_SUSPENDED, NULL);
+	SetThreadPriority(playingThread, THREAD_PRIORITY_TIME_CRITICAL);
+	ResumeThread(playingThread);
 }
 
 
