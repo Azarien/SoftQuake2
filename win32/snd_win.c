@@ -37,7 +37,6 @@ typedef enum {SIS_SUCCESS, SIS_FAILURE, SIS_NOTAVAIL} sndinitstat;
 
 static qboolean	dsound_init;
 static qboolean	snd_firsttime = true, snd_isdirect;
-static qboolean	primary_format_set;
 
 // starts at 0 for disabled
 static int	snd_buffer_count = 0;
@@ -58,7 +57,7 @@ DWORD	gSndBufSize;
 MMTIME		mmstarttime;
 
 LPDIRECTSOUND pDS;
-LPDIRECTSOUNDBUFFER pDSBuf, pDSPBuf;
+LPDIRECTSOUNDBUFFER pDSBuf;
 
 qboolean SNDDMA_InitDirect (void);
 
@@ -88,7 +87,7 @@ static qboolean DS_CreateBuffers( void )
 {
 	DSBUFFERDESC	dsbuf;
 	DSBCAPS			dsbcaps;
-	WAVEFORMATEX	pformat, format;
+	WAVEFORMATEX	format;
 	DWORD			dwWrite;
 
 	memset (&format, 0, sizeof(format));
@@ -102,8 +101,8 @@ static qboolean DS_CreateBuffers( void )
 
 	Com_Printf( "Creating DS buffers\n" );
 
-	Com_DPrintf("...setting EXCLUSIVE coop level: " );
-	if ( DS_OK != pDS->lpVtbl->SetCooperativeLevel( pDS, cl_hwnd, DSSCL_EXCLUSIVE ) )
+	Com_DPrintf("...setting PRIORITY coop level: " );
+	if ( DS_OK != pDS->lpVtbl->SetCooperativeLevel( pDS, cl_hwnd, DSSCL_PRIORITY ) )
 	{
 		Com_Printf ("failed\n");
 		FreeSound ();
@@ -111,95 +110,36 @@ static qboolean DS_CreateBuffers( void )
 	}
 	Com_DPrintf("ok\n" );
 
-// get access to the primary buffer, if possible, so we can set the
-// sound hardware format
+// create the secondary buffer we'll actually work with
 	memset (&dsbuf, 0, sizeof(dsbuf));
 	dsbuf.dwSize = sizeof(DSBUFFERDESC);
-	dsbuf.dwFlags = DSBCAPS_PRIMARYBUFFER;
-	dsbuf.dwBufferBytes = 0;
-	dsbuf.lpwfxFormat = NULL;
+	dsbuf.dwBufferBytes = SECONDARY_BUFFER_SIZE;
+	dsbuf.lpwfxFormat = &format;
+
+	Com_DPrintf( "...creating secondary buffer: " );
+	if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBuf, NULL))
+	{
+		Com_Printf( "failed\n" );
+		FreeSound ();
+		return false;
+	}
+	Com_DPrintf( "ok\n" );
+
+	dma.channels = format.nChannels;
+	dma.samplebits = format.wBitsPerSample;
+	dma.speed = format.nSamplesPerSec;
 
 	memset(&dsbcaps, 0, sizeof(dsbcaps));
 	dsbcaps.dwSize = sizeof(dsbcaps);
-	primary_format_set = false;
 
-	Com_DPrintf( "...creating primary buffer: " );
-	if (DS_OK == pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSPBuf, NULL))
+	if (DS_OK != pDSBuf->lpVtbl->GetCaps (pDSBuf, &dsbcaps))
 	{
-		pformat = format;
-
-		Com_DPrintf( "ok\n" );
-		if (DS_OK != pDSPBuf->lpVtbl->SetFormat (pDSPBuf, &pformat))
-		{
-			if (snd_firsttime)
-				Com_DPrintf ("...setting primary sound format: failed\n");
-		}
-		else
-		{
-			if (snd_firsttime)
-				Com_DPrintf ("...setting primary sound format: ok\n");
-
-			primary_format_set = true;
-		}
+		Com_Printf ("*** GetCaps failed ***\n");
+		FreeSound ();
+		return false;
 	}
-	else
-		Com_Printf( "failed\n" );
 
-	if ( !primary_format_set || !s_primary->value)
-	{
-	// create the secondary buffer we'll actually work with
-		memset (&dsbuf, 0, sizeof(dsbuf));
-		dsbuf.dwSize = sizeof(DSBUFFERDESC);
-		dsbuf.dwFlags = DSBCAPS_CTRLFREQUENCY | DSBCAPS_LOCSOFTWARE;
-		dsbuf.dwBufferBytes = SECONDARY_BUFFER_SIZE;
-		dsbuf.lpwfxFormat = &format;
-
-		memset(&dsbcaps, 0, sizeof(dsbcaps));
-		dsbcaps.dwSize = sizeof(dsbcaps);
-
-		Com_DPrintf( "...creating secondary buffer: " );
-		if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBuf, NULL))
-		{
-			Com_Printf( "failed\n" );
-			FreeSound ();
-			return false;
-		}
-		Com_DPrintf( "ok\n" );
-
-		dma.channels = format.nChannels;
-		dma.samplebits = format.wBitsPerSample;
-		dma.speed = format.nSamplesPerSec;
-
-		if (DS_OK != pDSBuf->lpVtbl->GetCaps (pDSBuf, &dsbcaps))
-		{
-			Com_Printf ("*** GetCaps failed ***\n");
-			FreeSound ();
-			return false;
-		}
-
-		Com_Printf ("...using secondary sound buffer\n");
-	}
-	else
-	{
-		Com_Printf( "...using primary buffer\n" );
-
-		Com_DPrintf( "...setting WRITEPRIMARY coop level: " );
-		if (DS_OK != pDS->lpVtbl->SetCooperativeLevel (pDS, cl_hwnd, DSSCL_WRITEPRIMARY))
-		{
-			Com_Printf( "failed\n" );
-			FreeSound ();
-			return false;
-		}
-		Com_DPrintf( "ok\n" );
-
-		if (DS_OK != pDSPBuf->lpVtbl->GetCaps (pDSPBuf, &dsbcaps))
-		{
-			Com_Printf ("*** GetCaps failed ***\n");
-			return false;
-		}
-
-		pDSBuf = pDSPBuf;
-	}
+	Com_Printf ("...using secondary sound buffer\n");
 
 	// Make sure mixer is active
 	pDSBuf->lpVtbl->Play(pDSBuf, 0, 0, DSBPLAY_LOOPING);
@@ -247,14 +187,7 @@ static void DS_DestroyBuffers( void )
 		pDSBuf->lpVtbl->Release( pDSBuf );
 	}
 
-	// only release primary buffer if it's not also the mixing buffer we just released
-	if ( pDSPBuf && ( pDSBuf != pDSPBuf ) )
-	{
-		Com_DPrintf( "...releasing primary buffer\n" );
-		pDSPBuf->lpVtbl->Release( pDSPBuf );
-	}
 	pDSBuf = NULL;
-	pDSPBuf = NULL;
 
 	dma.buffer = NULL;
 }
@@ -277,7 +210,6 @@ void FreeSound (void)
 
 	pDS = NULL;
 	pDSBuf = NULL;
-	pDSPBuf = NULL;
 	hData = 0;
 	lpData = NULL;
 	dsound_init = false;
