@@ -449,32 +449,3 @@ void SNDDMA_Shutdown(void)
 {
 	FreeSound ();
 }
-
-
-/*
-===========
-S_Activate
-
-Called when the main window gains or loses focus.
-The window have been destroyed and recreated
-between a deactivate and an activate.
-===========
-*/
-void S_Activate (qboolean active)
-{
-	if ( active )
-	{
-		if ( pDS && cl_hwnd && snd_isdirect )
-		{
-			DS_CreateBuffers();
-		}
-	}
-	else
-	{
-		if ( pDS && cl_hwnd && snd_isdirect )
-		{
-			DS_DestroyBuffers();
-		}
-	}
-}
-
