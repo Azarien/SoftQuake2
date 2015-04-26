@@ -35,7 +35,7 @@ HRESULT (WINAPI *pDirectSoundCreate)(GUID FAR *lpGUID, LPDIRECTSOUND FAR *lplpDS
 
 typedef enum {SIS_SUCCESS, SIS_FAILURE, SIS_NOTAVAIL} sndinitstat;
 
-static qboolean	dsound_init;
+qboolean	dsound_init;
 static qboolean	snd_firsttime = true, snd_isdirect;
 
 // starts at 0 for disabled

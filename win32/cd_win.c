@@ -21,9 +21,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // rights reserved.
 
 #include <windows.h>
+#include <dsound.h>
 #include "../client/client.h"
 
 extern	HWND	cl_hwnd;
+extern qboolean	dsound_init;
+extern LPDIRECTSOUND pDS;
 
 static qboolean cdValid = false;
 static qboolean	playing = false;
@@ -36,6 +39,8 @@ static byte 	remap[100];
 static byte		cdrom;
 static byte		playTrack;
 static byte		maxTrack;
+
+static LPDIRECTSOUNDBUFFER pDSBufCD;
 
 cvar_t	*cd_volume;
 cvar_t *cd_nocd;
@@ -107,7 +112,8 @@ void CDAudio_Play2(int track, qboolean looping)
 	playTrack = track;
 	playing = true;
 
-	//!TODO: set playing volume to cd_volume.value (range 0.0 .. 1.0)
+	// force volume update
+	cdvolume = -1;
 }
 
 
@@ -312,18 +318,25 @@ void CDAudio_Update(void)
 
 	if (cd_volume->value != cdvolume)
 	{
-		cdvolume = cd_volume->value;
+		LONG max_attenuation = 4000; // 40 dB
+		LONG attenuation;
 
-		// set volume here
+		cdvolume = cd_volume->value;
+		if (cdvolume < 0.01)
+			attenuation = DSBVOLUME_MIN;
+		else
+			attenuation = -max_attenuation + cdvolume*max_attenuation;
+		pDSBufCD->lpVtbl->SetVolume(pDSBufCD, attenuation);
 	}
 }
 
 
 int CDAudio_Init(void)
 {
-	DWORD	dwReturn;
-	MCI_OPEN_PARMS	mciOpenParms;
-    MCI_SET_PARMS	mciSetParms;
+	WAVEFORMATEX	format;
+	DSBUFFERDESC	dsbuf;
+	DWORD			dwSize;
+	char*			lpData;
 	int				n;
 
 	cd_nocd = Cvar_Get ("cd_nocd", "0", CVAR_ARCHIVE );
@@ -334,7 +347,52 @@ int CDAudio_Init(void)
 
 	cd_volume = Cvar_Get ("cd_volume", "1", CVAR_ARCHIVE);
 
-	//!TODO: init here
+	if (!dsound_init)
+	{
+		Com_Printf("CDAudio_Init: DirectSound not initialized.\n");
+		return -1;
+	}
+
+	memset (&format, 0, sizeof(format));
+	format.wFormatTag = WAVE_FORMAT_PCM;
+	format.nChannels = 2;
+    format.wBitsPerSample = 16;
+    format.nSamplesPerSec = 44100;
+    format.nBlockAlign = format.nChannels * format.wBitsPerSample / 8;
+    format.cbSize = 0;
+    format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+
+	memset (&dsbuf, 0, sizeof(dsbuf));
+	dsbuf.dwSize = sizeof(DSBUFFERDESC);
+	dsbuf.dwFlags = DSBCAPS_CTRLVOLUME;
+	dsbuf.dwBufferBytes = format.nAvgBytesPerSec;
+	dsbuf.lpwfxFormat = &format;
+
+	if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBufCD, NULL))
+	{
+		Com_Printf("CDAudio_Init: CreateSoundBuffer failed.\n");
+		return -1;
+	}
+
+	if (DS_OK != pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &lpData, &dwSize, NULL, NULL, DSBLOCK_ENTIREBUFFER))
+	{
+		Com_Printf("CDAudio_Init: Lock sound buffer failed.\n");
+		pDSBufCD->lpVtbl->Release(pDSBufCD);
+		return -1;
+	}
+
+	memset (lpData, 0, dwSize);
+	//lpData[1] = 0x7F;
+	//cdvolume = -1;
+
+	pDSBufCD->lpVtbl->Unlock(pDSBufCD, lpData, dwSize, NULL, 0);
+
+	if (DS_OK != pDSBufCD->lpVtbl->Play(pDSBufCD, 0, 0, DSBPLAY_LOOPING))
+	{
+		Com_Printf("CDAudio_Init: Play sound buffer failed.\n");
+		pDSBufCD->lpVtbl->Release(pDSBufCD);
+		return -1;
+	}
 
 	for (n = 0; n < 100; n++)
 		remap[n] = n;
@@ -343,7 +401,7 @@ int CDAudio_Init(void)
 
 	if (CDAudio_GetAudioDiskInfo())
 	{
-//		Com_Printf("CDAudio_Init: No CD in player.\n");
+		Com_Printf("CDAudio_Init: No tracks found.\n");
 		cdValid = false;
 		enabled = false;
 	}
@@ -362,7 +420,12 @@ void CDAudio_Shutdown(void)
 		return;
 	CDAudio_Stop();
 
-	//!TODO: shutdown here
+	if (pDSBufCD)
+	{
+		pDSBufCD->lpVtbl->Stop(pDSBufCD);
+		pDSBufCD->lpVtbl->Release(pDSBufCD);
+	}
+	pDSBufCD = NULL;
 }
 
 
