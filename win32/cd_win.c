@@ -31,11 +31,13 @@ static qboolean	wasPlaying = false;
 static qboolean	initialized = false;
 static qboolean	enabled = false;
 static qboolean playLooping = false;
+static float	cdvolume;
 static byte 	remap[100];
 static byte		cdrom;
 static byte		playTrack;
 static byte		maxTrack;
 
+cvar_t	*cd_volume;
 cvar_t *cd_nocd;
 cvar_t *cd_loopcount;
 cvar_t *cd_looptrack;
@@ -176,7 +178,7 @@ void CDAudio_Play2(int track, qboolean looping)
 	playTrack = track;
 	playing = true;
 
-	if ( Cvar_VariableValue( "cd_nocd" ) )
+	if (cd_volume->value == 0.0)
 		CDAudio_Pause ();
 }
 
@@ -416,16 +418,18 @@ LONG CDAudio_MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void CDAudio_Update(void)
 {
-	if ( cd_nocd->value != !enabled )
+	if (cd_volume && cd_volume->value != cdvolume)
 	{
-		if ( cd_nocd->value )
+		if (cdvolume)
 		{
-			CDAudio_Stop();
-			enabled = false;
+			Cvar_SetValue ("cd_volume", 0.0);
+			cdvolume = cd_volume->value;
+			CDAudio_Pause ();
 		}
 		else
 		{
-			enabled = true;
+			Cvar_SetValue ("cd_volume", 1.0);
+			cdvolume = cd_volume->value;
 			CDAudio_Resume ();
 		}
 	}
@@ -444,6 +448,8 @@ int CDAudio_Init(void)
 	cd_looptrack = Cvar_Get ("cd_looptrack", "11", 0);
 	if ( cd_nocd->value)
 		return -1;
+
+	cd_volume = Cvar_Get ("cd_volume", "1", CVAR_ARCHIVE);
 
 	mciOpenParms.lpstrDeviceType = "cdaudio";
 	if (dwReturn = mciSendCommand(0, MCI_OPEN, MCI_OPEN_TYPE | MCI_OPEN_SHAREABLE, (DWORD) (LPVOID) &mciOpenParms))
