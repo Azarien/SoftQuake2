@@ -168,6 +168,11 @@ static int CDAudio_GetAudioDiskInfo(void)
 		char filename[MAX_PATH];
 		sprintf(filename, "%s\\Track%03d.ogg", FS_Gamedir(), i);
 		f = fopen(filename, "rb");
+		if (!f)
+		{
+			sprintf(filename, "%s\\Track%02d.ogg", FS_Gamedir(), i);
+			f = fopen(filename, "rb");
+		}
 		if (f)
 		{
 			maxTrack = i;
@@ -196,11 +201,6 @@ static int CDAudio_GetAudioDiskInfo(void)
 void CDAudio_WaitForFinish(void)
 {
 	WaitForSingleObject(cdPlayingFinishedEvent, INFINITE);
-}
-
-static qboolean PlayCallback(struct ThreadArgList_t *playData, char *ptr, DWORD len)
-{
-	return PaintSoundOGG(playData, ptr, len);
 }
 
 #define BUFFER_PARTS 8
@@ -240,12 +240,17 @@ static unsigned int __stdcall PlayingThreadProc(void *arglist)
 
 	pDSBufCDNotify->lpVtbl->SetNotificationPositions(pDSBufCDNotify, BUFFER_PARTS, notifies);
 
-	pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &ptr, &dummy, NULL, NULL, DSBLOCK_ENTIREBUFFER);
+	if (FAILED(pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &ptr, &dummy, NULL, NULL, DSBLOCK_ENTIREBUFFER)))
+	{
+		Com_DPrintf("CDAudio: cannot lock sound buffer.\n");
+		return -1;
+	}
 
-	if (!PlayCallback(tal, ptr, (BUFFER_PARTS-1)*part_size))
+	if (!PaintSoundOGG(tal, ptr, (BUFFER_PARTS-1)*part_size))
 		SetEvent(cdStopEvent);
 
 	pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
+
 	pDSBufCD->lpVtbl->SetCurrentPosition(pDSBufCD, 0);
 	pDSBufCD->lpVtbl->Play(pDSBufCD, 0, 0, DSBPLAY_LOOPING);
 
@@ -261,7 +266,7 @@ static unsigned int __stdcall PlayingThreadProc(void *arglist)
 				pDSBufCD->lpVtbl->Restore(pDSBufCD);
 				pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0);
 			}
-			more_data = PlayCallback(tal, ptr, part_size);
+			more_data = PaintSoundOGG(tal, ptr, part_size);
 			pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
 			if (!more_data)
 			{
@@ -320,7 +325,7 @@ void CDAudio_Play2(int track, qboolean looping)
 
 	if (track < 1 || track > maxTrack)
 	{
-		CDAudio_Stop();
+		Com_DPrintf("CDAudio: Bad track number %u.\n", track);
 		return;
 	}
 
@@ -338,8 +343,12 @@ void CDAudio_Play2(int track, qboolean looping)
 	sprintf(filename, "%s\\Track%03d.ogg", FS_Gamedir(), track);
 	if (!OpenOGG(filename, tal))
 	{
-		Com_DPrintf("CDAudio: Cannot open Vorbis file \"%s\"", filename);
-		return;
+		sprintf(filename, "%s\\Track%02d.ogg", FS_Gamedir(), track);
+		if (!OpenOGG(filename, tal))
+		{
+			Com_DPrintf("CDAudio: Cannot open Vorbis file \"%s\"", filename);
+			return;
+		}
 	}
 
 	playLooping = looping;
