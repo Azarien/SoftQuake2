@@ -281,7 +281,7 @@ static void CD_f (void)
 			Com_Printf("Currently %s track %u\n", playLooping ? "looping" : "playing", playTrack);
 		else if (wasPlaying)
 			Com_Printf("Paused %s track %u\n", playLooping ? "looping" : "playing", playTrack);
-		Com_Printf("Volume is %f\n", cd_volume->value);
+		Com_Printf("Volume is %f\n", cdvolume);
 		return;
 	}
 }
@@ -307,6 +307,15 @@ static void CD_f (void)
 
 void CDAudio_Update(void)
 {
+	if (!enabled)
+		return;
+
+	if (cd_volume->value != cdvolume)
+	{
+		cdvolume = cd_volume->value;
+
+		// set volume here
+	}
 }
 
 
