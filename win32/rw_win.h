@@ -43,8 +43,7 @@ typedef struct
 
 	LPDIRECTDRAWSURFACE7 lpddsFrontBuffer;	// video card display memory front buffer
 	LPDIRECTDRAWSURFACE7 lpddsBackBuffer;	// system memory backbuffer
-	LPDIRECTDRAWSURFACE7 lpddsOffScreenBuffer;	// system memory backbuffer
-	LPDIRECTDRAWPALETTE	lpddpPalette;		// DirectDraw palette
+	byte *lpOffScreenBuffer;				// system memory backbuffer
 
 	qboolean		palettized;			// true if desktop is paletted
 

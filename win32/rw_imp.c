@@ -192,38 +192,51 @@ void SWimp_EndFrame (void)
 	}
 	else
 	{
-		RECT r;
+		int x, y;
 		HRESULT rval;
 		DDSURFACEDESC2 ddsd;
+		byte *srcscanline, *dstscanline;
 
-		r.left = 0;
-		r.top = 0;
-		r.right = vid.width;
-		r.bottom = vid.height;
-
-		sww_state.lpddsOffScreenBuffer->lpVtbl->Unlock( sww_state.lpddsOffScreenBuffer, NULL );
-
-		if ( ( rval = sww_state.lpddsBackBuffer->lpVtbl->BltFast( sww_state.lpddsFrontBuffer,
-																0, 0,
-																sww_state.lpddsOffScreenBuffer, 
-																&r, 
-																DDBLTFAST_WAIT ) ) == DDERR_SURFACELOST )
+		ZeroMemory(&ddsd, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		
+		rval = sww_state.lpddsBackBuffer->lpVtbl->Lock( sww_state.lpddsBackBuffer,
+														NULL,
+														&ddsd,
+														DDLOCK_WRITEONLY,
+														NULL );
+		if (rval == DDERR_SURFACELOST)
 		{
-			sww_state.lpddsBackBuffer->lpVtbl->Restore( sww_state.lpddsFrontBuffer );
-			sww_state.lpddsBackBuffer->lpVtbl->BltFast( sww_state.lpddsFrontBuffer,
-														0, 0,
-														sww_state.lpddsOffScreenBuffer, 
-														&r, 
-														DDBLTFAST_WAIT );
+			sww_state.lpddsBackBuffer->lpVtbl->Restore(sww_state.lpddsBackBuffer);
+			rval = sww_state.lpddsBackBuffer->lpVtbl->Lock( sww_state.lpddsBackBuffer,
+															NULL,
+															&ddsd,
+															DDLOCK_WRITEONLY,
+															NULL );
 		}
 
-		memset( &ddsd, 0, sizeof( ddsd ) );
-		ddsd.dwSize = sizeof( ddsd );
-	
-		sww_state.lpddsOffScreenBuffer->lpVtbl->Lock( sww_state.lpddsOffScreenBuffer, NULL, &ddsd, DDLOCK_WAIT, NULL );
-
-		vid.buffer = ddsd.lpSurface;
-		vid.rowbytes = ddsd.lPitch;
+		if (rval == S_OK)
+		{
+			srcscanline = sww_state.lpOffScreenBuffer;
+			dstscanline = ddsd.lpSurface;
+			for (y = 0; y < vid.height; y++)
+			{
+				for (x = 0; x < vid.width; x++)
+				{
+					byte val = srcscanline[x];
+					dstscanline[x*4 + 0] = sw_state.currentpalette[val*4 + 2]; // B
+					dstscanline[x*4 + 1] = sw_state.currentpalette[val*4 + 1]; // G
+					dstscanline[x*4 + 2] = sw_state.currentpalette[val*4 + 0]; // R
+					dstscanline[x*4 + 3] = 255; // x
+				}
+				srcscanline += vid.width;
+				dstscanline += ddsd.lPitch;
+			}
+			sww_state.lpddsBackBuffer->lpVtbl->Unlock(sww_state.lpddsBackBuffer, NULL );
+			sww_state.lpddsFrontBuffer->lpVtbl->Flip(sww_state.lpddsFrontBuffer, NULL, 0);
+		}
+		vid.buffer = sww_state.lpOffScreenBuffer;
+		vid.rowbytes = vid.width;
 	}
 }
 
@@ -313,7 +326,7 @@ void SWimp_SetPalette( const unsigned char *palette )
 	}
 	else
 	{
-		DDRAW_SetPalette( ( const unsigned char * ) palette );
+	
 	}
 }
 

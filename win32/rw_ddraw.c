@@ -109,7 +109,7 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	*/
 	ri.Con_Printf( PRINT_ALL, "...finding display mode\n" );
 	ri.Con_Printf( PRINT_ALL, "...setting linear mode: " );
-	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 8, 0, 0 ) ) == DD_OK )
+	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 32, 0, 0 ) ) == DD_OK )
 	{
 		ri.Con_Printf( PRINT_ALL, "ok\n" );
 	}
@@ -159,63 +159,12 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	/*
 	** create our rendering buffer
 	*/
-	memset( &ddsd, 0, sizeof( ddsd ) );
-	ddsd.dwSize = sizeof( ddsd );
-	ddsd.dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_CAPS;
-	ddsd.dwHeight = vid.height;
-	ddsd.dwWidth = vid.width;
-	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
-
 	ri.Con_Printf( PRINT_ALL, "...creating offscreen buffer: " );
-	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->CreateSurface( sww_state.lpDirectDraw, &ddsd, &sww_state.lpddsOffScreenBuffer, NULL ) ) != DD_OK )
-	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
-		goto fail;
-	}
+	sww_state.lpOffScreenBuffer = calloc(vid.width * vid.height, 1);
 	ri.Con_Printf( PRINT_ALL, "ok\n" );
 
-	/*
-	** create our DIRECTDRAWPALETTE
-	*/
-	ri.Con_Printf( PRINT_ALL, "...creating palette: " );
-	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->CreatePalette( sww_state.lpDirectDraw,
-														DDPCAPS_8BIT | DDPCAPS_ALLOW256,
-														palentries,
-														&sww_state.lpddpPalette,
-														NULL ) ) != DD_OK )
-	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
-		goto fail;
-	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
-
-	ri.Con_Printf( PRINT_ALL, "...setting palette: " );
-	if ( ( ddrval = sww_state.lpddsFrontBuffer->lpVtbl->SetPalette( sww_state.lpddsFrontBuffer,
-														 sww_state.lpddpPalette ) ) != DD_OK )
-	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
-		goto fail;
-	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
-
-	DDRAW_SetPalette( ( const unsigned char * ) sw_state.currentpalette );
-
-	/*
-	** lock the back buffer
-	*/
-	memset( &ddsd, 0, sizeof( ddsd ) );
-	ddsd.dwSize = sizeof( ddsd );
-	
-ri.Con_Printf( PRINT_ALL, "...locking backbuffer: " );
-	if ( ( ddrval = sww_state.lpddsOffScreenBuffer->lpVtbl->Lock( sww_state.lpddsOffScreenBuffer, NULL, &ddsd, DDLOCK_WAIT, NULL ) ) != DD_OK )
-	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
-		goto fail;
-	}
-ri.Con_Printf( PRINT_ALL, "ok\n" );
-
-	*ppbuffer = ddsd.lpSurface;
-	*ppitch   = ddsd.lPitch;
+	*ppbuffer = sww_state.lpOffScreenBuffer;
+	*ppitch   = vid.width;
 
 	for ( i = 0; i < vid.height; i++ )
 	{
@@ -233,55 +182,15 @@ fail:
 }
 
 /*
-** DDRAW_SetPalette
-**
-** Sets the color table in our DIB section, and also sets the system palette
-** into an identity mode if we're running in an 8-bit palettized display mode.
-**
-** The palette is expected to be 1024 bytes, in the format:
-**
-** R = offset 0
-** G = offset 1
-** B = offset 2
-** A = offset 3
-*/
-void DDRAW_SetPalette( const unsigned char *pal )
-{
-	PALETTEENTRY palentries[256];
-	int i;
-
-	if (!sww_state.lpddpPalette)
-		return;
-
-	for ( i = 0; i < 256; i++, pal += 4 )
-	{
-		palentries[i].peRed   = pal[0];
-		palentries[i].peGreen = pal[1];
-		palentries[i].peBlue  = pal[2];
-		palentries[i].peFlags = PC_RESERVED | PC_NOCOLLAPSE;
-	}
-
-	if ( sww_state.lpddpPalette->lpVtbl->SetEntries( sww_state.lpddpPalette,
-		                                        0,
-												0,
-												256,
-												palentries ) != DD_OK )
-	{
-		ri.Con_Printf( PRINT_ALL, "DDRAW_SetPalette() - SetEntries failed\n" );
-	}
-}
-
-/*
 ** DDRAW_Shutdown
 */
 void DDRAW_Shutdown( void )
 {
-	if ( sww_state.lpddsOffScreenBuffer )
+	if ( sww_state.lpOffScreenBuffer )
 	{
 		ri.Con_Printf( PRINT_ALL, "...releasing offscreen buffer\n");
-		sww_state.lpddsOffScreenBuffer->lpVtbl->Unlock( sww_state.lpddsOffScreenBuffer, NULL );
-		sww_state.lpddsOffScreenBuffer->lpVtbl->Release( sww_state.lpddsOffScreenBuffer );
-		sww_state.lpddsOffScreenBuffer = NULL;
+		free(sww_state.lpOffScreenBuffer);
+		sww_state.lpOffScreenBuffer = NULL;
 	}
 
 	if ( sww_state.lpddsBackBuffer )
@@ -296,13 +205,6 @@ void DDRAW_Shutdown( void )
 		ri.Con_Printf( PRINT_ALL, "...releasing front buffer\n");
 		sww_state.lpddsFrontBuffer->lpVtbl->Release( sww_state.lpddsFrontBuffer );
 		sww_state.lpddsFrontBuffer = NULL;
-	}
-
-	if (sww_state.lpddpPalette)
-	{
-		ri.Con_Printf( PRINT_ALL, "...releasing palette\n");
-		sww_state.lpddpPalette->lpVtbl->Release ( sww_state.lpddpPalette );
-		sww_state.lpddpPalette = NULL;
 	}
 
 	if ( sww_state.lpDirectDraw )
