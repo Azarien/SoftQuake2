@@ -22,7 +22,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <windows.h>
 #include <dsound.h>
+#include <process.h>
 #include "../client/client.h"
+
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
 
 extern	HWND	cl_hwnd;
 extern qboolean	dsound_init;
@@ -43,16 +47,17 @@ static byte		maxTrack;
 static LPDIRECTSOUNDBUFFER pDSBufCD;
 static LPDIRECTSOUNDNOTIFY pDSBufCDNotify;
 static DWORD gCDBufSize;
-static HANDLE cdStopEvent, cdTrackEndEvent;
-
-typedef BOOL (*playcallback_t)(void *userdata, char *ptr, DWORD len);
-typedef void (*finishnotify_t)(void *userdata);
+static HANDLE cdStopEvent, cdPlayingFinishedEvent;
 
 struct ThreadArgList_t
 {
-	playcallback_t callback;
-	void *userdata;
-	finishnotify_t notify;
+	byte playTrack;
+	qboolean playLooping;
+
+	OggVorbis_File vf;
+	char oggb[4096];
+	unsigned oggb_first;
+	unsigned oggb_count;
 };
 
 cvar_t	*cd_volume;
@@ -62,6 +67,77 @@ cvar_t *cd_looptrack;
 
 int		loopcounter;
 
+typedef qboolean (*playcallback_t)(struct ThreadArgList_t *playData, char *ptr, DWORD len);
+typedef void (*finishnotify_t)(struct ThreadArgList_t *playData);
+
+qboolean OpenOGG(const char *filename, struct ThreadArgList_t *ud)
+{
+	FILE *file;
+	file = fopen(filename, "rb");
+	if (file == NULL)
+		return false;
+
+	if(ov_open_callbacks(file, &ud->vf, NULL, 0, OV_CALLBACKS_DEFAULT) < 0)
+	{
+		fclose(file);
+		return true;
+	}
+
+	ud->oggb_count = 0;
+	return true;
+}
+
+ 
+void CloseOGG(struct ThreadArgList_t *ud)
+{
+	ov_clear(&ud->vf);
+}
+
+static qboolean PaintSoundOGG(struct ThreadArgList_t *ud, char *ptr, DWORD len)
+{
+	int dummy;
+	unsigned remaining = len;
+	unsigned OGGBUFFER_SIZE = ARRAYSIZE(ud->oggb);
+	unsigned read;
+
+	unsigned tocopy;
+	if (ud->oggb_count > 0)
+	{
+		tocopy = min(len, ud->oggb_count);
+		memcpy(ptr, ud->oggb + ud->oggb_first, tocopy);
+		ptr += tocopy;
+		remaining -= tocopy;
+		ud->oggb_first += tocopy;
+		ud->oggb_count -= tocopy;
+	}
+	while (remaining >= OGGBUFFER_SIZE)
+	{
+		read = ov_read(&ud->vf, ptr, OGGBUFFER_SIZE, 0, 2, 1, &dummy);
+		if (read == 0)
+		{
+			memset(ptr, 0, remaining);
+			return false;
+		}
+		remaining -= read;
+		ptr += read;
+	}
+	while (remaining > 0)
+	{
+		read = ov_read(&ud->vf, ud->oggb, OGGBUFFER_SIZE, 0, 2, 1, &dummy);
+		if (read == 0)
+		{
+			memset(ptr, 0, remaining);
+			return false;
+		}
+		tocopy = min(read, remaining);
+		memcpy(ptr, ud->oggb, tocopy);
+		remaining -= tocopy;
+		ptr += tocopy;
+		ud->oggb_count = read - tocopy;
+		ud->oggb_first = tocopy;
+	}
+	return true;
+}
 
 void CDAudio_Pause(void);
 
@@ -77,23 +153,126 @@ static void CDAudio_CloseDoor(void)
 
 static int CDAudio_GetAudioDiskInfo(void)
 {
-	cdValid = false;
+	// cdValid = false;
 
 	//!TODO: get info here
 
-	Com_DPrintf("CDAudio: no music tracks\n");
-	return -1;
+	//Com_DPrintf("CDAudio: no music tracks\n");
+	//return -1;
 
-	// cdValid = true;
-	// maxTrack = ...;
+	cdValid = true;
+	maxTrack = 21;
 
-	// return 0;
+	return 0;
 }
 
+void CDAudio_WaitForFinish(void)
+{
+	WaitForSingleObject(cdPlayingFinishedEvent, INFINITE);
+}
 
+static qboolean PlayCallback(struct ThreadArgList_t *playData, char *ptr, DWORD len)
+{
+	return PaintSoundOGG(playData, ptr, len);
+}
+
+#define BUFFER_PARTS 4
+
+static void PlayingThreadProc(void *arglist)
+{
+	struct ThreadArgList_t *tal = arglist;
+
+	DSBPOSITIONNOTIFY notifies[BUFFER_PARTS];
+	HANDLE events[BUFFER_PARTS+1]; // +1 for StopEvent
+	HANDLE endevents[2];
+	char *ptr;
+	int i;
+	DWORD dummy, fillpart;
+	DWORD part_size;
+	HRESULT hr;
+
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+
+	CDAudio_WaitForFinish();
+	ResetEvent(cdPlayingFinishedEvent);
+	ResetEvent(cdStopEvent);
+
+	part_size = gCDBufSize / BUFFER_PARTS;
+
+	for (i=0; i<BUFFER_PARTS; i++)
+	{
+		events[i] = CreateEvent(NULL, FALSE, FALSE, NULL);
+		notifies[i].dwOffset = i * part_size;
+		notifies[i].hEventNotify = events[i];
+	}
+	events[i] = cdStopEvent;
+
+	pDSBufCD->lpVtbl->GetStatus(pDSBufCD, &dummy);
+	if (dummy & DSBSTATUS_BUFFERLOST)
+		pDSBufCD->lpVtbl->Restore(pDSBufCD);
+
+	pDSBufCDNotify->lpVtbl->SetNotificationPositions(pDSBufCDNotify, BUFFER_PARTS, notifies);
+
+	pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &ptr, &dummy, NULL, NULL, DSBLOCK_ENTIREBUFFER);
+
+	if (!PlayCallback(tal, ptr, (BUFFER_PARTS-1)*part_size))
+		SetEvent(cdStopEvent);
+
+	pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
+	pDSBufCD->lpVtbl->SetCurrentPosition(pDSBufCD, 0);
+	pDSBufCD->lpVtbl->Play(pDSBufCD, 0, 0, DSBPLAY_LOOPING);
+
+	while(true)
+	{
+		fillpart = WaitForMultipleObjects(BUFFER_PARTS+1, events, FALSE, 2000);
+		if (fillpart >= WAIT_OBJECT_0 && fillpart < WAIT_OBJECT_0 + BUFFER_PARTS)
+		{
+			fillpart = (fillpart - WAIT_OBJECT_0 + BUFFER_PARTS - 1) % BUFFER_PARTS;
+			if (pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0) == DSERR_BUFFERLOST)
+			{
+				pDSBufCD->lpVtbl->Restore(pDSBufCD);
+				pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0);
+			}
+			if (!PlayCallback(tal, ptr, part_size))
+			{
+				endevents[0] = events[fillpart];
+				endevents[1] = cdStopEvent;
+				WaitForMultipleObjects(2, endevents, FALSE, 2000);
+				break;
+			}
+			pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
+		}
+		else
+			break;
+	}
+
+	pDSBufCD->lpVtbl->Stop(pDSBufCD);
+	pDSBufCDNotify->lpVtbl->SetNotificationPositions(pDSBufCDNotify, 0, NULL);
+	for (i=0; i<BUFFER_PARTS; i++)
+		CloseHandle(events[i]);
+
+	SetEvent(cdPlayingFinishedEvent);
+	
+	CloseOGG(tal);
+	/*
+	//!TODO: 
+	when track finishes, execute this:
+		if (playing)
+		{
+			playing = false;
+			if (playLooping)
+				CDAudio_Play(playTrack, true);
+		}
+	*/
+
+	free(arglist);
+}
 
 void CDAudio_Play2(int track, qboolean looping)
 {
+	char filename[MAX_PATH];
+	struct ThreadArgList_t *tal;
+
 	if (!enabled)
 		return;
 	
@@ -119,7 +298,18 @@ void CDAudio_Play2(int track, qboolean looping)
 		CDAudio_Stop();
 	}
 
-	//!TODO: play here
+	tal = malloc(sizeof(struct ThreadArgList_t));
+	tal->playLooping = looping;
+	tal->playTrack = track;
+
+	sprintf(filename, "%s\\Track%03d.ogg", FS_Gamedir(), track);
+	if (!OpenOGG(filename, tal))
+	{
+		Com_DPrintf("CDAudio: Cannot open Vorbis file \"%s\"", filename);
+		return;
+	}
+
+	_beginthread(PlayingThreadProc, 0, tal);
 
 	playLooping = looping;
 	playTrack = track;
@@ -148,7 +338,7 @@ void CDAudio_Stop(void)
 	if (!playing)
 		return;
 
-	//!TODO: stop here
+	SetEvent(cdStopEvent);
 
 	wasPlaying = false;
 	playing = false;
@@ -391,7 +581,7 @@ int CDAudio_Init(void)
 
 	gCDBufSize = dsbuf.dwBufferBytes;
 
-	cdTrackEndEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
+	cdPlayingFinishedEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 	cdStopEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 
 	for (n = 0; n < 100; n++)
@@ -420,7 +610,7 @@ void CDAudio_Shutdown(void)
 	if (!initialized)
 		return;
 	CDAudio_Stop();
-	// MyDSound_WaitForFinish();
+	CDAudio_WaitForFinish();
  	
 	if (pDSBufCDNotify)
 	{
@@ -433,10 +623,10 @@ void CDAudio_Shutdown(void)
 		pDSBufCD->lpVtbl->Release(pDSBufCD);
 		pDSBufCD = NULL;
 	}
-	if (cdTrackEndEvent)
+	if (cdPlayingFinishedEvent)
 	{
-		CloseHandle(cdTrackEndEvent);
-		cdTrackEndEvent = NULL;
+		CloseHandle(cdPlayingFinishedEvent);
+		cdPlayingFinishedEvent = NULL;
 	}
 	if (cdStopEvent)
 	{
