@@ -68,7 +68,6 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
 	cvar_t			*vid_xpos, *vid_ypos;
 	int				stylebits;
 	int				x, y, w, h;
-	int				exstyle;
 
 	/* Register the frame class */
     wc.style         = 0;
@@ -87,12 +86,10 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
 
 	if (fullscreen)
 	{
-		exstyle = WS_EX_TOPMOST;
 		stylebits = WS_POPUP|WS_VISIBLE;
 	}
 	else
 	{
-		exstyle = 0;
 		stylebits = WINDOW_STYLE;
 	}
 
@@ -119,8 +116,7 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
 		y = vid_ypos->value;
 	}
 
-	glw_state.hWnd = CreateWindowEx (
-		 exstyle, 
+	glw_state.hWnd = CreateWindow (
 		 WINDOW_CLASS_NAME,
 		 "Quake 2",
 		 stylebits,

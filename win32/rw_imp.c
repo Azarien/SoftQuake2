@@ -48,16 +48,10 @@ void VID_CreateWindow( int width, int height, int stylebits )
 	RECT			r;
 	cvar_t			*vid_xpos, *vid_ypos, *vid_fullscreen;
 	int				x, y, w, h;
-	int				exstyle;
 
 	vid_xpos = ri.Cvar_Get ("vid_xpos", "0", 0);
 	vid_ypos = ri.Cvar_Get ("vid_ypos", "0", 0);
 	vid_fullscreen = ri.Cvar_Get ("vid_fullscreen", "0", CVAR_ARCHIVE );
-
-	if ( vid_fullscreen->value )
-		exstyle = WS_EX_TOPMOST;
-	else
-		exstyle = 0;
 
 	/* Register the frame class */
     wc.style         = 0;
@@ -86,8 +80,7 @@ void VID_CreateWindow( int width, int height, int stylebits )
 	x = vid_xpos->value;
 	y = vid_ypos->value;
 
-	sww_state.hWnd = CreateWindowEx (
-		exstyle,
+	sww_state.hWnd = CreateWindow (
 		 WINDOW_CLASS_NAME,
 		 "Quake 2",
 		 stylebits,
