@@ -3,15 +3,18 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctf", "ctf\ctf_v12.vcxproj", "{36103E21-4C50-413C-8B97-5B01E3434F54}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctf_v12", "ctf\ctf_v12.vcxproj", "{36103E21-4C50-413C-8B97-5B01E3434F54}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "game", "game\game_v12.vcxproj", "{3E0F9D4B-1712-4764-B8B6-0056FC3EB0A3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "game_v12", "game\game_v12.vcxproj", "{3E0F9D4B-1712-4764-B8B6-0056FC3EB0A3}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "quake2", "quake2_v12.vcxproj", "{7361EEB8-A564-41C7-98A8-8420868069C0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "quake2_v12", "quake2_v12.vcxproj", "{7361EEB8-A564-41C7-98A8-8420868069C0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0E844A1D-1288-4213-9D71-5E81799AFCA2} = {0E844A1D-1288-4213-9D71-5E81799AFCA2}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ref_gl", "ref_gl\ref_gl_v12.vcxproj", "{BC71CC13-4C4A-4E85-8515-61EEEE555435}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ref_gl_v12", "ref_gl\ref_gl_v12.vcxproj", "{BC71CC13-4C4A-4E85-8515-61EEEE555435}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ref_soft", "ref_soft\ref_soft_v12.vcxproj", "{0E844A1D-1288-4213-9D71-5E81799AFCA2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ref_soft_v12", "ref_soft\ref_soft_v12.vcxproj", "{0E844A1D-1288-4213-9D71-5E81799AFCA2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
