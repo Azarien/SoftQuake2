@@ -60,8 +60,6 @@ MMTIME		mmstarttime;
 LPDIRECTSOUND pDS;
 LPDIRECTSOUNDBUFFER pDSBuf, pDSPBuf;
 
-HINSTANCE hInstDS;
-
 qboolean SNDDMA_InitDirect (void);
 
 void FreeSound( void );
@@ -277,13 +275,6 @@ void FreeSound (void)
 		pDS->lpVtbl->Release( pDS );
 	}
 
-	if ( hInstDS )
-	{
-		Com_DPrintf( "...freeing DSOUND.DLL\n" );
-		FreeLibrary( hInstDS );
-		hInstDS = NULL;
-	}
-
 	pDS = NULL;
 	pDSBuf = NULL;
 	pDSPBuf = NULL;
@@ -316,30 +307,8 @@ sndinitstat SNDDMA_InitDirect (void)
 
 	Com_Printf( "Initializing DirectSound\n");
 
-	if ( !hInstDS )
-	{
-		Com_DPrintf( "...loading dsound.dll: " );
-
-		hInstDS = LoadLibrary("dsound.dll");
-		
-		if (hInstDS == NULL)
-		{
-			Com_Printf ("failed\n");
-			return SIS_FAILURE;
-		}
-
-		Com_DPrintf ("ok\n");
-		pDirectSoundCreate = (void *)GetProcAddress(hInstDS,"DirectSoundCreate");
-
-		if (!pDirectSoundCreate)
-		{
-			Com_Printf ("*** couldn't get DS proc addr ***\n");
-			return SIS_FAILURE;
-		}
-	}
-
 	Com_DPrintf( "...creating DS object: " );
-	while ( ( hresult = iDirectSoundCreate( NULL, &pDS, NULL ) ) != DS_OK )
+	while ( ( hresult = DirectSoundCreate( NULL, &pDS, NULL ) ) != DS_OK )
 	{
 		if (hresult != DSERR_ALLOCATED)
 		{
