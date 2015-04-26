@@ -110,7 +110,6 @@ void R_MarkLeaves (void);
 
 cvar_t	*r_lefthand;
 cvar_t	*sw_aliasstats;
-cvar_t	*sw_allow_modex;
 cvar_t	*sw_clearcolor;
 cvar_t	*sw_drawflat;
 cvar_t	*sw_draworder;
@@ -245,7 +244,6 @@ void R_ImageList_f( void );
 void R_Register (void)
 {
 	sw_aliasstats = ri.Cvar_Get ("sw_polymodelstats", "0", 0);
-	sw_allow_modex = ri.Cvar_Get( "sw_allow_modex", "1", CVAR_ARCHIVE );
 	sw_clearcolor = ri.Cvar_Get ("sw_clearcolor", "2", 0);
 	sw_drawflat = ri.Cvar_Get ("sw_drawflat", "0", 0);
 	sw_draworder = ri.Cvar_Get ("sw_draworder", "0", 0);

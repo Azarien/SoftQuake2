@@ -47,7 +47,6 @@ typedef struct
 	LPDIRECTDRAWPALETTE	lpddpPalette;		// DirectDraw palette
 
 	qboolean		palettized;			// true if desktop is paletted
-	qboolean		modex;
 
 	qboolean		initializing;
 } swwstate_t;
