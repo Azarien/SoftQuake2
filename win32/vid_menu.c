@@ -22,9 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define REF_SOFT	0
 #define REF_OPENGL	1
-#define REF_3DFX	2
-#define REF_POWERVR	3
-#define REF_VERITE	4
 
 extern cvar_t *vid_ref;
 extern cvar_t *vid_fullscreen;
@@ -149,18 +146,6 @@ static void ApplyChanges( void *unused )
 		Cvar_Set( "vid_ref", "gl" );
 		Cvar_Set( "gl_driver", "opengl32" );
 		break;
-	case REF_3DFX:
-		Cvar_Set( "vid_ref", "gl" );
-		Cvar_Set( "gl_driver", "3dfxgl" );
-		break;
-	case REF_POWERVR:
-		Cvar_Set( "vid_ref", "gl" );
-		Cvar_Set( "gl_driver", "pvrgl" );
-		break;
-	case REF_VERITE:
-		Cvar_Set( "vid_ref", "gl" );
-		Cvar_Set( "gl_driver", "veritegl" );
-		break;
 	}
 
 	/*
@@ -172,21 +157,6 @@ static void ApplyChanges( void *unused )
 		if ( vid_gamma->modified )
 		{
 			vid_ref->modified = true;
-			if ( stricmp( gl_driver->string, "3dfxgl" ) == 0 )
-			{
-				char envbuffer[1024];
-				float g;
-
-				vid_ref->modified = true;
-
-				g = 2.00 * ( 0.8 - ( vid_gamma->value - 0.5 ) ) + 1.0F;
-				Com_sprintf( envbuffer, sizeof(envbuffer), "SSTV2_GAMMA=%f", g );
-				putenv( envbuffer );
-				Com_sprintf( envbuffer, sizeof(envbuffer), "SST_GAMMA=%f", g );
-				putenv( envbuffer );
-
-				vid_gamma->modified = false;
-			}
 		}
 
 		if ( gl_driver->modified )
@@ -225,11 +195,8 @@ void VID_MenuInit( void )
 	};
 	static const char *refs[] =
 	{
-		"[software      ]",
-		"[default OpenGL]",
-		"[3Dfx OpenGL   ]",
-		"[PowerVR OpenGL]",
-//		"[Rendition OpenGL]",
+		"[software ]",
+		"[OpenGL   ]",
 		0
 	};
 	static const char *yesno_names[] =
@@ -273,15 +240,7 @@ void VID_MenuInit( void )
 	else if ( strcmp( vid_ref->string, "gl" ) == 0 )
 	{
 		s_current_menu_index = OPENGL_MENU;
-		if ( strcmp( gl_driver->string, "3dfxgl" ) == 0 )
-			s_ref_list[s_current_menu_index].curvalue = REF_3DFX;
-		else if ( strcmp( gl_driver->string, "pvrgl" ) == 0 )
-			s_ref_list[s_current_menu_index].curvalue = REF_POWERVR;
-		else if ( strcmp( gl_driver->string, "opengl32" ) == 0 )
-			s_ref_list[s_current_menu_index].curvalue = REF_OPENGL;
-		else
-//			s_ref_list[s_current_menu_index].curvalue = REF_VERITE;
-			s_ref_list[s_current_menu_index].curvalue = REF_OPENGL;
+		s_ref_list[s_current_menu_index].curvalue = REF_OPENGL;
 	}
 
 	s_software_menu.x = viddef.width * 0.50;
