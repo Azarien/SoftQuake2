@@ -194,7 +194,7 @@ void SWimp_EndFrame (void)
 	{
 		RECT r;
 		HRESULT rval;
-		DDSURFACEDESC ddsd;
+		DDSURFACEDESC2 ddsd;
 
 		r.left = 0;
 		r.top = 0;

@@ -39,11 +39,11 @@ typedef struct
 	COLORREF		oldsyscolors[20];	// original system colors
 
 	HINSTANCE		hinstDDRAW;			// library instance for DDRAW.DLL
-	LPDIRECTDRAW 	lpDirectDraw;		// pointer to DirectDraw object
+	LPDIRECTDRAW7 	lpDirectDraw;		// pointer to DirectDraw object
 
-	LPDIRECTDRAWSURFACE lpddsFrontBuffer;	// video card display memory front buffer
-	LPDIRECTDRAWSURFACE lpddsBackBuffer;	// system memory backbuffer
-	LPDIRECTDRAWSURFACE lpddsOffScreenBuffer;	// system memory backbuffer
+	LPDIRECTDRAWSURFACE7 lpddsFrontBuffer;	// video card display memory front buffer
+	LPDIRECTDRAWSURFACE7 lpddsBackBuffer;	// system memory backbuffer
+	LPDIRECTDRAWSURFACE7 lpddsOffScreenBuffer;	// system memory backbuffer
 	LPDIRECTDRAWPALETTE	lpddpPalette;		// DirectDraw palette
 
 	qboolean		palettized;			// true if desktop is paletted

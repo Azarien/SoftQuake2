@@ -42,13 +42,13 @@ static const char *DDrawError( int code );
 qboolean DDRAW_Init( unsigned char **ppbuffer, int *ppitch )
 {
 	HRESULT ddrval;
-	DDSURFACEDESC ddsd;
-	DDSCAPS ddscaps;
+	DDSURFACEDESC2 ddsd;
+	DDSCAPS2 ddscaps;
 	PALETTEENTRY palentries[256];
 	int i;
 	extern cvar_t *sw_allow_modex;
 
-	HRESULT (WINAPI *QDirectDrawCreate)( GUID FAR *lpGUID, LPDIRECTDRAW FAR * lplpDDRAW, IUnknown FAR * pUnkOuter );
+	HRESULT (WINAPI *QDirectDrawCreateEx)( GUID FAR *lpGUID, void FAR * lplpDDRAW, REFGUID iid, IUnknown FAR * pUnkOuter );
 
 ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 
@@ -74,9 +74,9 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 		ri.Con_Printf( PRINT_ALL, "ok\n" );
 	}
 
-	if ( ( QDirectDrawCreate = ( HRESULT (WINAPI *)( GUID FAR *, LPDIRECTDRAW FAR *, IUnknown FAR * ) ) GetProcAddress( sww_state.hinstDDRAW, "DirectDrawCreate" ) ) == NULL )
+	if ( ( QDirectDrawCreateEx = ( HRESULT (WINAPI *)( GUID FAR *, void FAR * lplpDDRAW, REFGUID iid, IUnknown FAR * ) ) GetProcAddress( sww_state.hinstDDRAW, "DirectDrawCreateEx" ) ) == NULL )
 	{
-		ri.Con_Printf( PRINT_ALL, "*** DirectDrawCreate == NULL ***\n" );
+		ri.Con_Printf( PRINT_ALL, "*** DirectDrawCreateEx == NULL ***\n" );
 		goto fail;
 	}
 
@@ -84,7 +84,7 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	** create the direct draw object
 	*/
 	ri.Con_Printf( PRINT_ALL, "...creating DirectDraw object: ");
-	if ( ( ddrval = QDirectDrawCreate( NULL, &sww_state.lpDirectDraw, NULL ) ) != DD_OK )
+	if ( ( ddrval = QDirectDrawCreateEx( NULL, &sww_state.lpDirectDraw, &IID_IDirectDraw7, NULL ) ) != DD_OK )
 	{
 		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
 		goto fail;
@@ -111,7 +111,7 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	*/
 	ri.Con_Printf( PRINT_ALL, "...finding display mode\n" );
 	ri.Con_Printf( PRINT_ALL, "...setting linear mode: " );
-	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 8 ) ) == DD_OK )
+	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 8, 0, 0 ) ) == DD_OK )
 	{
 		ri.Con_Printf( PRINT_ALL, "ok\n" );
 	}
@@ -144,7 +144,7 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 		/*
 		** change our display mode
 		*/
-		if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 8 ) ) != DD_OK )
+		if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 8, 0, 0 ) ) != DD_OK )
 		{
 			ri.Con_Printf( PRINT_ALL, "failed SDM - %s\n", DDrawError( ddrval ) );
 			goto fail;
@@ -319,7 +319,7 @@ void DDRAW_Shutdown( void )
 	if ( sww_state.lpddsOffScreenBuffer )
 	{
 		ri.Con_Printf( PRINT_ALL, "...releasing offscreen buffer\n");
-		sww_state.lpddsOffScreenBuffer->lpVtbl->Unlock( sww_state.lpddsOffScreenBuffer, vid.buffer );
+		sww_state.lpddsOffScreenBuffer->lpVtbl->Unlock( sww_state.lpddsOffScreenBuffer, NULL );
 		sww_state.lpddsOffScreenBuffer->lpVtbl->Release( sww_state.lpddsOffScreenBuffer );
 		sww_state.lpddsOffScreenBuffer = NULL;
 	}
