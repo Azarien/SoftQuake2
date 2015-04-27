@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../ref_gl/gl_local.h"
 #include "glw_win.h"
 #include "winquake.h"
+#include "resource.h"
 
 static qboolean GLimp_SwitchFullscreen( int width, int height );
 qboolean GLimp_InitGL (void);
@@ -75,7 +76,7 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
     wc.hInstance     = glw_state.hInstance;
-    wc.hIcon         = 0;
+	wc.hIcon         = LoadIcon(glw_state.hInstance, IDI_ICON1);
     wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 	wc.hbrBackground = (void *)COLOR_GRAYTEXT;
     wc.lpszMenuName  = 0;

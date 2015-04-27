@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "..\ref_soft\r_local.h"
 #include "rw_win.h"
 #include "winquake.h"
+#include "resource.h"
 
 // Console variables that we need to access from this module
 
@@ -59,7 +60,7 @@ void VID_CreateWindow( int width, int height, int stylebits )
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
     wc.hInstance     = sww_state.hInstance;
-    wc.hIcon         = 0;
+	wc.hIcon         = LoadIcon(sww_state.hInstance, IDI_ICON1);
     wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 	wc.hbrBackground = (void *)COLOR_GRAYTEXT;
     wc.lpszMenuName  = 0;
