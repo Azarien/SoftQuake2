@@ -76,7 +76,7 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
     wc.hInstance     = glw_state.hInstance;
-	wc.hIcon         = LoadIcon(glw_state.hInstance, IDI_ICON1);
+	wc.hIcon         = LoadIcon(glw_state.hInstance, MAKEINTRESOURCE(IDI_ICON1));
     wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 	wc.hbrBackground = (void *)COLOR_GRAYTEXT;
     wc.lpszMenuName  = 0;

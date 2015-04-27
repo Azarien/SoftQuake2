@@ -160,18 +160,16 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	** create our rendering buffer
 	*/
 	ri.Con_Printf( PRINT_ALL, "...creating offscreen buffer: " );
-	sww_state.lpOffScreenBuffer = calloc(vid.width * vid.height, 1);
+	sww_state.lpOffScreenBuffer = malloc(vid.width * vid.height);
+	memset(sww_state.lpOffScreenBuffer, 255, vid.width * vid.height);
 	ri.Con_Printf( PRINT_ALL, "ok\n" );
 
 	*ppbuffer = sww_state.lpOffScreenBuffer;
 	*ppitch   = vid.width;
 
-	for ( i = 0; i < vid.height; i++ )
-	{
-		memset( *ppbuffer + i * *ppitch, 0, *ppitch );
-	}
-
 	sww_state.palettized = true;
+
+	sww_state.fakePalette = malloc(1024);
 
 	return true;
 fail:
@@ -181,11 +179,29 @@ fail:
 	return false;
 }
 
+void DDRAW_SetPalette( const unsigned char *_pal )
+{
+	// convert RGB0 to BGR0
+	int i;
+	for (i=0; i<=255; i++)
+	{
+		sww_state.fakePalette[i*4 + 0] = _pal[i*4 + 2]; // B
+		sww_state.fakePalette[i*4 + 1] = _pal[i*4 + 1]; // G
+		sww_state.fakePalette[i*4 + 2] = _pal[i*4 + 0]; // R
+		sww_state.fakePalette[i*4 + 3] = 255;           // x
+	}
+}
+
 /*
 ** DDRAW_Shutdown
 */
 void DDRAW_Shutdown( void )
 {
+	if ( sww_state.fakePalette )
+	{
+		free(sww_state.fakePalette);
+		sww_state.fakePalette = NULL;
+	}
 	if ( sww_state.lpOffScreenBuffer )
 	{
 		ri.Con_Printf( PRINT_ALL, "...releasing offscreen buffer\n");

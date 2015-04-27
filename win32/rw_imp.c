@@ -60,7 +60,7 @@ void VID_CreateWindow( int width, int height, int stylebits )
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
     wc.hInstance     = sww_state.hInstance;
-	wc.hIcon         = LoadIcon(sww_state.hInstance, IDI_ICON1);
+	wc.hIcon         = LoadIcon(sww_state.hInstance, MAKEINTRESOURCE(IDI_ICON1));
     wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 	wc.hbrBackground = (void *)COLOR_GRAYTEXT;
     wc.lpszMenuName  = 0;
@@ -224,11 +224,8 @@ void SWimp_EndFrame (void)
 			{
 				for (x = 0; x < vid.width; x++)
 				{
-					byte val = srcscanline[x];
-					dstscanline[x*4 + 0] = sw_state.currentpalette[val*4 + 2]; // B
-					dstscanline[x*4 + 1] = sw_state.currentpalette[val*4 + 1]; // G
-					dstscanline[x*4 + 2] = sw_state.currentpalette[val*4 + 0]; // R
-					dstscanline[x*4 + 3] = 255; // x
+					byte col = srcscanline[x];
+					((unsigned int*)dstscanline)[x] = ((unsigned int*)sww_state.fakePalette)[col];
 				}
 				srcscanline += vid.width;
 				dstscanline += ddsd.lPitch;
@@ -327,7 +324,7 @@ void SWimp_SetPalette( const unsigned char *palette )
 	}
 	else
 	{
-	
+		DDRAW_SetPalette( ( const unsigned char * ) palette );
 	}
 }
 
