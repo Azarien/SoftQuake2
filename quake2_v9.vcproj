@@ -20,7 +20,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops;.\oggd_v9.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib wsock32.lib"
+				AdditionalDependencies="dxguid.lib dsound.lib winmm.lib wsock32.lib"
 				OutputFile="$(OutDir)\quake2.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -105,7 +105,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops;.\ogg_v9.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
@@ -156,7 +156,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="winmm.lib wsock32.lib"
+				AdditionalDependencies="dxguid.lib dsound.lib winmm.lib wsock32.lib"
 				OutputFile="$(OutDir)\quake2.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
