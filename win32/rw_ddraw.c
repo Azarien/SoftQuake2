@@ -137,13 +137,6 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	ri.Con_Printf( PRINT_ALL, "ok\n" );
 
 	/*
-	** see if we're a ModeX mode
-	*/
-	sww_state.lpddsFrontBuffer->lpVtbl->GetCaps( sww_state.lpddsFrontBuffer, &ddscaps );
-	if ( ddscaps.dwCaps & DDSCAPS_MODEX )
-		ri.Con_Printf( PRINT_ALL, "...using ModeX\n" );
-
-	/*
 	** create our back buffer
 	*/
 	ddsd.ddsCaps.dwCaps = DDSCAPS_BACKBUFFER;
