@@ -43,21 +43,10 @@ qboolean DDRAW_Init( unsigned char **ppbuffer, int *ppitch )
 {
 	HRESULT ddrval;
 	DDSURFACEDESC2 ddsd;
-	DDSCAPS2 ddscaps;
-	PALETTEENTRY palentries[256];
-	int i;
 
 	HRESULT (WINAPI *QDirectDrawCreateEx)( GUID FAR *lpGUID, void FAR * lplpDDRAW, REFGUID iid, IUnknown FAR * pUnkOuter );
 
 ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
-
-
-	for ( i = 0; i < 256; i++ )
-	{
-		palentries[i].peRed		= ( d_8to24table[i] >> 0  ) & 0xff;
-		palentries[i].peGreen	= ( d_8to24table[i] >> 8  ) & 0xff;
-		palentries[i].peBlue	= ( d_8to24table[i] >> 16 ) & 0xff;
-	}
 
 	/*
 	** load DLL and fetch pointer to entry point
