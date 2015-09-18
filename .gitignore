@@ -4,3 +4,8 @@ Release
 *.user
 *.suo
 *.sdf
+*.pak
+/baseq2/save/current
+/baseq2/*.ogg
+/baseq2/config.cfg
+/baseq2/save/save0
