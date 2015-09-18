@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="dxguid.lib dsound.lib winmm.lib wsock32.lib"
+				AdditionalDependencies="comctl32.lib dxguid.lib dsound.lib winmm.lib wsock32.lib"
 				OutputFile="$(OutDir)\quake2.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -81,6 +81,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				AdditionalManifestFiles="win32\manifest.xml"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -156,7 +157,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="dxguid.lib dsound.lib winmm.lib wsock32.lib"
+				AdditionalDependencies="comctl32.lib dxguid.lib dsound.lib winmm.lib wsock32.lib"
 				OutputFile="$(OutDir)\quake2.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -170,6 +171,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				AdditionalManifestFiles="win32\manifest.xml"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -1247,6 +1249,10 @@
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
 			>
+			<File
+				RelativePath=".\win32\manifest.xml"
+				>
+			</File>
 			<File
 				RelativePath="win32\q2.ico"
 				>

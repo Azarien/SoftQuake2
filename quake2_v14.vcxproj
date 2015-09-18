@@ -79,7 +79,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>dsound.lib;dxguid.lib;winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;dsound.lib;dxguid.lib;winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)quake2.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -91,6 +91,9 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\debug/quake2.bsc</OutputFile>
     </Bscmake>
+    <Manifest>
+      <AdditionalManifestFiles>win32\manifest.xml</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -118,7 +121,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>dsound.lib;dxguid.lib;winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;dsound.lib;dxguid.lib;winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)quake2.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -131,6 +134,9 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\release/quake2.bsc</OutputFile>
     </Bscmake>
+    <Manifest>
+      <AdditionalManifestFiles>win32\manifest.xml</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="client\cl_cin.c" />
@@ -214,17 +220,20 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="ctf\ctf.vcxproj">
+    <Xml Include="win32\manifest.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ctf\ctf_v14.vcxproj">
       <Project>{36103e21-4c50-413c-8b97-5b01e3434f54}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="game\game.vcxproj">
+    <ProjectReference Include="game\game_v14.vcxproj">
       <Project>{3e0f9d4b-1712-4764-b8b6-0056fc3eb0a3}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="ref_gl\ref_gl.vcxproj">
+    <ProjectReference Include="ref_gl\ref_gl_v14.vcxproj">
       <Project>{bc71cc13-4c4a-4e85-8515-61eeee555435}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="ref_soft\ref_soft_v14.vcxproj">
+      <Project>{0e844a1d-1288-4213-9d71-5e81799afca2}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
