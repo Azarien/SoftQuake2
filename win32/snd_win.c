@@ -334,6 +334,8 @@ int SNDDMA_Init(void)
 		return 0;
 	}
 
+	CDAudio_Init ();
+
 	return 1;
 }
 
@@ -447,5 +449,6 @@ Reset the sound device for exiting
 */
 void SNDDMA_Shutdown(void)
 {
+	CDAudio_Shutdown ();
 	FreeSound ();
 }

@@ -1803,7 +1803,9 @@ void CL_Init (void)
 	SCR_Init ();
 	cls.disable_screen = true;	// don't draw yet
 
-	CDAudio_Init ();
+#ifndef WIN32
+	CDAudio_Init (); // CD-audio init is inside sound init
+#endif
 	CL_InitLocal ();
 	IN_Init ();
 
@@ -1835,7 +1837,9 @@ void CL_Shutdown(void)
 
 	CL_WriteConfiguration (); 
 
+#ifndef WIN32
 	CDAudio_Shutdown ();
+#endif
 	S_Shutdown();
 	IN_Shutdown ();
 	VID_Shutdown();

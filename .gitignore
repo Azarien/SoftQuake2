@@ -6,3 +6,5 @@ Release
 *.sdf
 *.pak
 /baseq2
+/rogue
+/xatrix
