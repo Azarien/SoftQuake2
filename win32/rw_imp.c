@@ -43,16 +43,13 @@ swwstate_t sww_state;
 */
 #define	WINDOW_CLASS_NAME "Quake 2"
 
-void VID_CreateWindow( int width, int height, int stylebits )
+void VID_CreateWindow( int width, int height, qboolean fullscreen )
 {
 	WNDCLASS		wc;
 	RECT			r;
-	cvar_t			*vid_xpos, *vid_ypos, *vid_fullscreen;
+	cvar_t			*vid_xpos, *vid_ypos;
+	int				stylebits;
 	int				x, y, w, h;
-
-	vid_xpos = ri.Cvar_Get ("vid_xpos", "0", 0);
-	vid_ypos = ri.Cvar_Get ("vid_ypos", "0", 0);
-	vid_fullscreen = ri.Cvar_Get ("vid_fullscreen", "0", CVAR_ARCHIVE );
 
 	/* Register the frame class */
     wc.style         = 0;
@@ -69,6 +66,15 @@ void VID_CreateWindow( int width, int height, int stylebits )
     if (!RegisterClass (&wc) )
 		ri.Sys_Error (ERR_FATAL, "Couldn't register window class");
 
+	if (fullscreen)
+	{
+		stylebits = WS_POPUP | WS_VISIBLE;
+	}
+	else
+	{
+		stylebits = WINDOW_STYLE;
+	}
+
 	r.left = 0;
 	r.top = 0;
 	r.right  = width;
@@ -78,8 +84,19 @@ void VID_CreateWindow( int width, int height, int stylebits )
 
 	w = r.right - r.left;
 	h = r.bottom - r.top;
-	x = vid_xpos->value;
-	y = vid_ypos->value;
+
+	if (fullscreen)
+	{
+		x = 0;
+		y = 0;
+	}
+	else
+	{
+		vid_xpos = ri.Cvar_Get("vid_xpos", "0", 0);
+		vid_ypos = ri.Cvar_Get("vid_ypos", "0", 0);
+		x = vid_xpos->value;
+		y = vid_ypos->value;
+	}
 
 	sww_state.hWnd = CreateWindow (
 		 WINDOW_CLASS_NAME,
@@ -133,7 +150,7 @@ static qboolean SWimp_InitGraphics( qboolean fullscreen )
 	SWimp_Shutdown ();
 
 	// create a new window
-	VID_CreateWindow (vid.width, vid.height, WINDOW_STYLE);
+	VID_CreateWindow (vid.width, vid.height, fullscreen);
 
 	// initialize the appropriate subsystem
 	if ( !fullscreen )
