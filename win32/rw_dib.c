@@ -191,6 +191,8 @@ qboolean DIB_Init( unsigned char **ppbuffer, int *ppitch )
 		goto fail;
 	}
 
+	sww_state.pixel_size = 1;
+
 	return true;
 
 fail:

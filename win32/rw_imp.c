@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rw_win.h"
 #include "winquake.h"
 #include "resource.h"
+#include "mmintrin.h"
 
 // Console variables that we need to access from this module
 
@@ -237,16 +238,40 @@ void SWimp_EndFrame (void)
 		{
 			srcscanline = sww_state.lpOffScreenBuffer;
 			dstscanline = ddsd.lpSurface;
-			for (y = 0; y < vid.height; y++)
+
+			switch (sww_state.pixel_size)
 			{
-				for (x = 0; x < vid.width; x++)
+			case 1:
+				for (y = 0; y < vid.height; y++)
 				{
-					byte col = srcscanline[x];
-					((unsigned int*)dstscanline)[x] = ((unsigned int*)sww_state.fakePalette)[col];
+					for (x = 0; x < vid.width; x++)
+					{
+						byte col = srcscanline[x];
+						((unsigned int*) dstscanline)[x] = ((unsigned int*) sww_state.fakePalette)[col];
+					}
+					srcscanline += vid.width;
+					dstscanline += ddsd.lPitch;
 				}
-				srcscanline += vid.width;
-				dstscanline += ddsd.lPitch;
+				break;
+			case 2:
+				_m_empty();
+				for (y = 0; y < vid.height; y++)
+				{
+					byte *dstscanline2 = dstscanline + ddsd.lPitch;
+					for (x = 0; x < vid.width; x++)
+					{
+						byte col = srcscanline[x];
+						__m64 rgbm = _mm_set1_pi32(((unsigned int*) sww_state.fakePalette)[col]);
+						((__m64*) dstscanline)[x] = rgbm;
+						((__m64*) dstscanline2)[x] = rgbm;
+					}
+					dstscanline += ddsd.lPitch * 2;
+					srcscanline += vid.width;
+				}
+				_m_empty();
+				break;
 			}
+
 			sww_state.lpddsBackBuffer->lpVtbl->Unlock(sww_state.lpddsBackBuffer, NULL );
 			sww_state.lpddsFrontBuffer->lpVtbl->Flip(sww_state.lpddsFrontBuffer, NULL, 0);
 		}

@@ -93,12 +93,20 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	}
 	ri.Con_Printf( PRINT_ALL, "ok\n" );
 
+	if (vid.width < 512)
+		sww_state.pixel_size = 2;
+	else
+		sww_state.pixel_size = 1;
+
 	/*
 	** try changing the display mode normally
 	*/
 	ri.Con_Printf( PRINT_ALL, "...finding display mode\n" );
 	ri.Con_Printf( PRINT_ALL, "...setting linear mode: " );
-	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 32, 0, 0 ) ) == DD_OK )
+	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw,
+			vid.width * sww_state.pixel_size,
+			vid.height * sww_state.pixel_size,
+			32, 0, 0 ) ) == DD_OK )
 	{
 		ri.Con_Printf( PRINT_ALL, "ok\n" );
 	}

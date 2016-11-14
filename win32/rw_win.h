@@ -49,6 +49,7 @@ typedef struct
 	qboolean		palettized;			// true if desktop is paletted
 
 	qboolean		initializing;
+	int				pixel_size;
 } swwstate_t;
 
 extern swwstate_t sww_state;
